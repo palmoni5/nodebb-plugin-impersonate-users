@@ -7,13 +7,15 @@ $(document).ready(function () {
 		cachedState = null;
 		pendingStateRequest = null;
 
+		injectNavbarRestoreItem();
+
 		if (!isProfilePage()) {
-			removeMenuItems();
+			removeProfileMenuItems();
 			return;
 		}
 
-		injectMenuItems();
-		setTimeout(injectMenuItems, 200);
+		injectProfileMenuItems();
+		setTimeout(injectProfileMenuItems, 200);
 	});
 
 	$(document).on('click', '.impersonate-users-login-link', async function (ev) {
@@ -45,16 +47,50 @@ $(document).ready(function () {
 		}
 	});
 
-	async function injectMenuItems() {
+	// Inject "Return to original user" into the navbar user dropdown (#user-control-list)
+	async function injectNavbarRestoreItem() {
+		$('.impersonate-users-navbar-item').remove();
+		$('.impersonate-users-navbar-divider').remove();
+
+		const state = await getState().catch(() => null);
+		if (!state || !state.isImpersonating) {
+			return;
+		}
+
+		const userControlList = $('#user-control-list');
+		if (!userControlList.length) {
+			return;
+		}
+
+		const label = await translator.translate('[[impersonate-users:profile.restore-original]]');
+		const html = `
+			<li role="presentation" class="dropdown-divider impersonate-users-navbar-divider"></li>
+			<li role="presentation" class="impersonate-users-navbar-item">
+				<a class="dropdown-item rounded-1 d-flex align-items-center gap-2 impersonate-users-restore-link" href="#" role="menuitem">
+					<i class="fa fa-undo fa-fw text-secondary"></i>
+					<span>${label}</span>
+				</a>
+			</li>
+		`;
+
+		const logoutItem = userControlList.find('[component="user/logout"]').closest('li');
+		if (logoutItem.length) {
+			logoutItem.before(html);
+		} else {
+			userControlList.append(html);
+		}
+	}
+
+	async function injectProfileMenuItems() {
 		const state = await getState();
 		if (!state || (!state.canImpersonate && !state.isImpersonating)) {
-			removeMenuItems();
+			removeProfileMenuItems();
 			return;
 		}
 
 		const viewedUid = getViewedUid();
 		if (!viewedUid) {
-			removeMenuItems();
+			removeProfileMenuItems();
 			return;
 		}
 
@@ -63,7 +99,7 @@ $(document).ready(function () {
 			return;
 		}
 
-		removeMenuItems();
+		removeProfileMenuItems();
 
 		const items = [];
 		if (state.canImpersonate && viewedUid !== state.currentUid) {
@@ -138,7 +174,7 @@ $(document).ready(function () {
 		return menu;
 	}
 
-	function removeMenuItems() {
+	function removeProfileMenuItems() {
 		$('.impersonate-users-profile-item').remove();
 		$('.impersonate-users-profile-divider').remove();
 	}

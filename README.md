@@ -5,7 +5,7 @@ A NodeBB plugin that lets administrators and authorized staff sign in as any oth
 ## Features
 
 - **Sign in as another user** — a "Sign in as this user" option appears in the gear dropdown on any user's profile page.
-- **One-click return** — while impersonating, a "Return to the original user" option appears on every profile page so you can switch back instantly.
+- **One-click return from anywhere** — while impersonating, a "Return to the original user" option appears in the navbar user dropdown (the avatar menu) on every page, so you can switch back without navigating to a specific profile.
 - **Privilege-based access** — works for administrators automatically; other staff can be granted access through the global privilege `impersonate:users` in the ACP.
 - **Session isolation** — uses NodeBB's native session handling; the original session is restored cleanly when you return.
 
@@ -38,7 +38,7 @@ Navigate to any user's profile page. If you have the impersonate privilege, the 
 
 ### Returning to your original account
 
-While impersonating, every profile page's gear dropdown shows **"Return to the original user"**. Clicking it:
+While impersonating, the navbar user dropdown (the avatar menu at the top of every page) shows **"Return to the original user"**. Clicking it:
 
 1. Revokes the impersonated session.
 2. Restores your original session.
