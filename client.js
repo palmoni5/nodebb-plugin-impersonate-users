@@ -64,13 +64,13 @@ $(document).ready(function () {
 
 		const label = await translator.translate('[[impersonate-users:profile.restore-original]]');
 		const html = `
-			<li role="presentation" class="dropdown-divider impersonate-users-navbar-divider"></li>
 			<li role="presentation" class="impersonate-users-navbar-item">
 				<a class="dropdown-item rounded-1 d-flex align-items-center gap-2 impersonate-users-restore-link" href="#" role="menuitem">
 					<i class="fa fa-undo fa-fw text-secondary"></i>
 					<span>${label}</span>
 				</a>
 			</li>
+			<li role="presentation" class="dropdown-divider impersonate-users-navbar-divider"></li>
 		`;
 
 		const logoutItem = userControlList.find('[component="user/logout"]').closest('li');
@@ -83,7 +83,7 @@ $(document).ready(function () {
 
 	async function injectProfileMenuItems() {
 		const state = await getState();
-		if (!state || (!state.canImpersonate && !state.isImpersonating)) {
+		if (!state || !state.canImpersonate) {
 			removeProfileMenuItems();
 			return;
 		}
@@ -104,10 +104,6 @@ $(document).ready(function () {
 		const items = [];
 		if (state.canImpersonate && viewedUid !== state.currentUid) {
 			items.push(await buildLoginItem(viewedUid));
-		}
-
-		if (state.isImpersonating) {
-			items.push(await buildRestoreItem(state));
 		}
 
 		if (!items.length) {
