@@ -1,0 +1,15 @@
+{
+  "name": "nodebb-plugin-impersonate-users",
+  "version": "1.0.0",
+  "description": "Allows administrators and authorized users to sign in as another user from the profile menu.",
+  "main": "library.js",
+  "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/palmoni5/nodebb-plugin-impersonate-users.git"
+  },
+  "homepage": "https://github.com/palmoni5/nodebb-plugin-impersonate-users#readme",
+  "bugs": {
+    "url": "https://github.com/palmoni5/nodebb-plugin-impersonate-users/issues"
+  }
+}

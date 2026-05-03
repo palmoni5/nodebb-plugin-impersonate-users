@@ -1,0 +1,22 @@
+{
+  "id": "nodebb-plugin-impersonate-users",
+  "name": "Impersonate Users",
+  "description": "Adds a profile menu action that lets authorized staff sign in as another user.",
+  "url": "https://github.com/palmoni5/nodebb-plugin-impersonate-users",
+  "library": "./library.js",
+  "scripts": [
+    "client.js"
+  ],
+  "hooks": [
+    {
+      "hook": "static:app.load",
+      "method": "init"
+    },
+    {
+      "hook": "static:privileges.global.init",
+      "method": "registerPrivileges"
+    }
+  ],
+  "languages": "public/languages",
+  "defaultLang": "en-GB"
+}
