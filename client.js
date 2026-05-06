@@ -1,11 +1,22 @@
 require(['api', 'alerts', 'translator'], function (api, alerts, translator) {
 $(document).ready(function () {
 	let cachedState = null;
+	let cachedStateUid = null;
 	let pendingStateRequest = null;
 
 	$(window).on('action:ajaxify.end', function () {
-		cachedState = null;
-		pendingStateRequest = null;
+		const currentUid = parseInt(app.user && app.user.uid, 10) || 0;
+
+		if (currentUid !== cachedStateUid) {
+			cachedState = null;
+			pendingStateRequest = null;
+			cachedStateUid = currentUid;
+		}
+
+		if (!currentUid) {
+			removeProfileMenuItems();
+			return;
+		}
 
 		injectNavbarRestoreItem();
 
