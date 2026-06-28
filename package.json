@@ -1,6 +1,6 @@
 {
   "name": "nodebb-plugin-impersonate-users",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Allows administrators and authorized users to sign in as another user from the profile menu.",
   "main": "library.js",
   "license": "GPL-3.0",

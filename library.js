@@ -1,6 +1,5 @@
 'use strict';
 
-const nconf = require.main.require('nconf');
 const winston = require.main.require('winston');
 
 const user = require.main.require('./src/user');
@@ -14,9 +13,9 @@ const plugin = module.exports;
 const IMPERSONATE_PRIVILEGE = 'impersonate:users';
 
 plugin.init = async function ({ router, middleware }) {
-	routeHelpers.setupPageRoute(router, '/plugins/impersonate-users/switch/:uid', [middleware.ensureLoggedIn], switchPage);
-	routeHelpers.setupPageRoute(router, '/plugins/impersonate-users/restore', [middleware.ensureLoggedIn], restorePage);
-
+	// Impersonation is performed exclusively through the CSRF-protected POST API below.
+	// No GET page route is exposed, so a session switch cannot be triggered by a
+	// cross-site link or navigation (CSRF).
 	routeHelpers.setupApiRoute(router, 'get', '/api/plugins/impersonate-users/privileges', [middleware.ensureLoggedIn], getPrivileges);
 	routeHelpers.setupApiRoute(router, 'post', '/api/plugins/impersonate-users/switch', [middleware.ensureLoggedIn, middleware.applyCSRF], switchApi);
 	routeHelpers.setupApiRoute(router, 'post', '/api/plugins/impersonate-users/restore', [middleware.ensureLoggedIn, middleware.applyCSRF], restoreApi);
@@ -31,41 +30,6 @@ plugin.registerPrivileges = async function (data) {
 		label: '[[impersonate-users:admin.impersonate-users]]',
 		type: 'moderation',
 	});
-
-	return data;
-};
-
-plugin.addProfileLink = async function (data) {
-	try {
-		const actorUid = parseInt(data && data.callerUID, 10) || 0;
-		const targetUid = parseInt(data && data.uid, 10) || 0;
-
-		if (!actorUid || !targetUid || actorUid === targetUid) {
-			return data;
-		}
-
-		if (!await canImpersonate(actorUid)) {
-			return data;
-		}
-
-		data.links = data.links || [];
-		data.links.push({
-			id: 'impersonate-user',
-			url: `${nconf.get('relative_path')}/plugins/impersonate-users/switch/${targetUid}`,
-			icon: 'fa-user-secret',
-			name: '[[impersonate-users:profile.login-as]]',
-			visibility: {
-				self: false,
-				other: true,
-				moderator: true,
-				globalMod: true,
-				admin: true,
-				canViewInfo: true,
-			},
-		});
-	} catch (err) {
-		winston.warn(`[nodebb-plugin-impersonate-users] Failed to add profile link: ${err.message}`);
-	}
 
 	return data;
 };
@@ -90,17 +54,6 @@ async function restoreApi(req, res) {
 	await controllerHelpers.formatApiResponse(200, res, {
 		next: await getProfilePath(restoredUid),
 	});
-}
-
-async function switchPage(req, res) {
-	const targetUid = parseInt(req.params.uid, 10);
-	await switchToUid(req, targetUid);
-	controllerHelpers.redirect(res, await getProfilePath(targetUid));
-}
-
-async function restorePage(req, res) {
-	const restoredUid = await restoreOriginalUser(req);
-	controllerHelpers.redirect(res, await getProfilePath(restoredUid));
 }
 
 async function switchToUid(req, targetUid) {
