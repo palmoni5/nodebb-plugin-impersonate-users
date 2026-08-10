@@ -1,5 +1,7 @@
 'use strict';
 
+const util = require('util');
+
 const winston = require.main.require('winston');
 
 const user = require.main.require('./src/user');
@@ -79,12 +81,20 @@ async function switchToUid(req, targetUid) {
 		return targetUid;
 	}
 
-	await revokeCurrentSession(req);
-	req.session.forceLogin = true;
-	await authenticationController.doLogin(req, targetUid);
+	const previousSession = capturePreviousSession(req);
+
+	// Log in first; the old session is only replaced once req.login() succeeds,
+	// so a failure here cannot strand the user without any session.
+	// trackSession is disabled so the impersonated session is not added to the
+	// target's session list — otherwise maxUserSessions could revoke the
+	// target's own, genuine sessions.
+	const loginAsync = util.promisify(req.login).bind(req);
+	await loginAsync({ uid: targetUid }, { keepSessionInfo: false });
+	await authenticationController.onSuccessfulLogin(req, targetUid, false);
 
 	req.session.impersonatorUid = state.actorUid;
 	await saveSession(req);
+	await cleanupPreviousSession(previousSession);
 
 	winston.info(`[nodebb-plugin-impersonate-users] ${state.actorUid} is now impersonating ${targetUid}`);
 	return targetUid;
@@ -101,12 +111,15 @@ async function restoreOriginalUser(req) {
 		throw new Error('[[error:no-user]]');
 	}
 
-	await revokeCurrentSession(req);
-	req.session.forceLogin = true;
+	const previousSession = capturePreviousSession(req);
+
+	// Restoring creates a genuine session for the original user, so regular
+	// login (including session tracking) applies here.
 	await authenticationController.doLogin(req, originalUid);
 
 	delete req.session.impersonatorUid;
 	await saveSession(req);
+	await cleanupPreviousSession(previousSession);
 
 	winston.info(`[nodebb-plugin-impersonate-users] Restored impersonated session back to ${originalUid}`);
 	return originalUid;
@@ -140,12 +153,28 @@ async function canImpersonate(uid) {
 	return Boolean(isAdmin || hasPrivilege);
 }
 
-async function revokeCurrentSession(req) {
-	if (!req.sessionID || !req.uid || parseInt(req.uid, 10) <= 0) {
+function capturePreviousSession(req) {
+	const uid = parseInt(req.uid, 10) || 0;
+	if (!req.sessionID || uid <= 0) {
+		return null;
+	}
+
+	return { sessionId: req.sessionID, uid };
+}
+
+async function cleanupPreviousSession(previousSession) {
+	if (!previousSession) {
 		return;
 	}
 
-	await user.auth.revokeSession(req.sessionID, req.uid);
+	// req.login() already regenerated (destroyed) the old session in the
+	// store; this only clears the stale reference from the previous user's
+	// session list. Best-effort — a failure here must not undo the login.
+	try {
+		await user.auth.revokeSession(previousSession.sessionId, previousSession.uid);
+	} catch (err) {
+		winston.warn(`[nodebb-plugin-impersonate-users] Failed to clean up previous session ${previousSession.sessionId}: ${err.message}`);
+	}
 }
 
 async function getProfilePath(uid) {
