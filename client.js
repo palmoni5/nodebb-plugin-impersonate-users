@@ -105,11 +105,6 @@ $(document).ready(function () {
 			return;
 		}
 
-		const menu = ensureMenu();
-		if (!menu.length) {
-			return;
-		}
-
 		removeProfileMenuItems();
 
 		const items = [];
@@ -117,7 +112,15 @@ $(document).ready(function () {
 			items.push(await buildLoginItem(viewedUid));
 		}
 
+		// Nothing to add (e.g. your own profile) — bail out before ensureMenu(),
+		// otherwise its fallback dropdown is left on the page as an empty gear
+		// button. Harmony renders no gear of its own here ({{{ if !isSelf }}}).
 		if (!items.length) {
+			return;
+		}
+
+		const menu = ensureMenu();
+		if (!menu.length) {
 			return;
 		}
 
@@ -184,6 +187,11 @@ $(document).ready(function () {
 	function removeProfileMenuItems() {
 		$('.impersonate-users-profile-item').remove();
 		$('.impersonate-users-profile-divider').remove();
+		// Our fallback dropdown only exists to hold those items; once it has
+		// none it's an empty gear button, so drop it too.
+		$('.impersonate-users-menu').filter(function () {
+			return $(this).find('li').length === 0;
+		}).remove();
 	}
 
 	function isProfilePage() {
