@@ -73,6 +73,15 @@ async function switchToUid(req, targetUid) {
 		throw new Error('[[error:no-privileges]]');
 	}
 
+	// A non-admin actor (one who only holds the impersonate:users privilege) must
+	// not be able to impersonate an administrator or global moderator - otherwise
+	// the moderation-level privilege becomes a path to full admin access. Admins
+	// may still impersonate anyone.
+	const actorIsAdmin = await user.isAdministrator(state.actorUid);
+	if (!actorIsAdmin && await user.isAdminOrGlobalMod(targetUid)) {
+		throw new Error('[[error:no-privileges]]');
+	}
+
 	if (state.isImpersonating && targetUid === state.actorUid) {
 		return await restoreOriginalUser(req);
 	}
